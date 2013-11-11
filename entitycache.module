@@ -148,6 +148,18 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
 
   public static function entityCacheSet($controller, $entities) {
     foreach ($entities as $item) {
+      // A special case for nodes, to make sure we cache a valid entity.
+      // See: http://jira.amazeelabs.com/browse/CD-3741
+      if ($controller->entityType == 'node') {
+        $changed = db_query('SELECT n.changed FROM {node} n WHERE n.nid=:nid LIMIT 0,1', array(':nid' => $item->nid))->fetchField(0);
+        // If the changed timestamp is different than the one we want to cache,
+        // then this means that the item to cache changed in the meantime. So,
+        // just do not cache the item right now, it will be cached in a later
+        // request.
+        if (!empty($changed) && $item->changed != $changed) {
+          continue;
+        }
+      }
       cache_set($item->{$controller->idKey}, $item, 'cache_entity_' . $controller->entityType);
     }
   }
