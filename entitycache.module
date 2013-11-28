@@ -151,12 +151,13 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       // A special case for nodes, to make sure we cache a valid entity.
       // See: http://jira.amazeelabs.com/browse/CD-3741
       if ($controller->entityType == 'node') {
-        $changed = db_query('SELECT n.changed FROM {node} n WHERE n.nid=:nid LIMIT 0,1', array(':nid' => $item->nid))->fetchField(0);
+        //$changed = db_query('SELECT n.changed FROM {node} n WHERE n.nid=:nid LIMIT 0,1', array(':nid' => $item->nid))->fetchField(0);
+        $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
         // If the changed timestamp is different than the one we want to cache,
         // then this means that the item to cache changed in the meantime. So,
         // just do not cache the item right now, it will be cached in a later
         // request.
-        if (!empty($changed) && $item->changed != $changed) {
+        if ($item->entitycache_token != $token->token) {
           continue;
         }
       }
@@ -182,6 +183,16 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     foreach (module_implements('entitycache_' . $controller->entityType . '_load') as $module) {
       $function = $module . '_entitycache_' . $controller->entityType . '_load';
       $function($entities);
+    }
+    // Load also the token.
+    // For the moment, for performance reasons, use only for nodes.
+    if ($controller->entityType == 'node') {
+      foreach ($entities as $key => $entity) {
+        $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
+        if (!empty($token)) {
+          $entities[$key]->entitycache_token = $token->token;
+        }
+      }
     }
   }
 }
@@ -287,6 +298,16 @@ function entitycache_entity_insert($entity, $type) {
     // just yet though because other modules might also misbehave.
     // cache_clear_all($id, 'cache_entity_' . $type);
   }
+  // @todo: remove this after the code was deployed and the table is sure that
+  // exists.
+  if (db_table_exists('entitycache_tokens')) {
+    // Generate a new token and insert it in the tokens table. Basically, we just
+    // generate a random number.
+    $token = rand(100000, 999999);
+    // We use db_query, it is faster.
+    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
+  }
 }
 
 /**
@@ -297,6 +318,11 @@ function entitycache_entity_delete($entity, $type) {
   list($id) = entity_extract_ids($type, $entity);
   if (!empty($info['entity cache'])) {
     cache_clear_all($id, 'cache_entity_' . $type);
+  }
+  // @todo: remove this after the code was deployed and the table is sure that
+  // exists.
+  if (db_table_exists('entitycache_tokens')) {
+    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
   }
 }
 
@@ -315,6 +341,16 @@ function entitycache_entity_update($entity, $type) {
   list($id) = entity_extract_ids($type, $entity);
   if (!empty($info['entity cache']) && empty($entity->migrate)) {
     cache_clear_all($id, 'cache_entity_' . $type);
+  }
+  // @todo: remove this after the code was deployed and the table is sure that
+  // exists.
+  if (db_table_exists('entitycache_tokens')) {
+    // Generate a new token and insert it in the tokens table. Basically, we just
+    // generate a random number.
+    $token = rand(100000, 999999);
+    // We use db_query, it is faster.
+    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
   }
 }
 
