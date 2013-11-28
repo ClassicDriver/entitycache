@@ -150,8 +150,9 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     foreach ($entities as $item) {
       // A special case for nodes, to make sure we cache a valid entity.
       // See: http://jira.amazeelabs.com/browse/CD-3741
-      if ($controller->entityType == 'node') {
-        //$changed = db_query('SELECT n.changed FROM {node} n WHERE n.nid=:nid LIMIT 0,1', array(':nid' => $item->nid))->fetchField(0);
+      // @todo: remove this after the code was deployed and the table is sure that
+     // exists.
+      if ($controller->entityType == 'node' && db_table_exists('entitycache_tokens')) {
         $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
         // If the changed timestamp is different than the one we want to cache,
         // then this means that the item to cache changed in the meantime. So,
@@ -186,7 +187,9 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     }
     // Load also the token.
     // For the moment, for performance reasons, use only for nodes.
-    if ($controller->entityType == 'node') {
+    // @todo: remove this after the code was deployed and the table is sure that
+    // exists.
+    if ($controller->entityType == 'node' && db_table_exists('entitycache_tokens')) {
       foreach ($entities as $key => $entity) {
         $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
         if (!empty($token)) {
