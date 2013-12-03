@@ -150,9 +150,7 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     foreach ($entities as $item) {
       // A special case for nodes, to make sure we cache a valid entity.
       // See: http://jira.amazeelabs.com/browse/CD-3741
-      // @todo: remove this after the code was deployed and the table is sure that
-     // exists.
-      if ($controller->entityType == 'node' && db_table_exists('entitycache_tokens')) {
+      if ($controller->entityType == 'node') {
         $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
         // If the changed timestamp is different than the one we want to cache,
         // then this means that the item to cache changed in the meantime. So,
@@ -187,9 +185,7 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     }
     // Load also the token.
     // For the moment, for performance reasons, use only for nodes.
-    // @todo: remove this after the code was deployed and the table is sure that
-    // exists.
-    if ($controller->entityType == 'node' && db_table_exists('entitycache_tokens')) {
+    if ($controller->entityType == 'node') {
       foreach ($entities as $key => $entity) {
         $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
         if (!empty($token)) {
@@ -301,16 +297,12 @@ function entitycache_entity_insert($entity, $type) {
     // just yet though because other modules might also misbehave.
     // cache_clear_all($id, 'cache_entity_' . $type);
   }
-  // @todo: remove this after the code was deployed and the table is sure that
-  // exists.
-  if (db_table_exists('entitycache_tokens')) {
-    // Generate a new token and insert it in the tokens table. Basically, we just
-    // generate a random number.
-    $token = rand(100000, 999999);
-    // We use db_query, it is faster.
-    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
-    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
-  }
+  // Generate a new token and insert it in the tokens table. Basically, we just
+  // generate a random number.
+  $token = rand(100000, 999999);
+  // We use db_query, it is faster.
+  db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+  db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
 }
 
 /**
@@ -322,11 +314,7 @@ function entitycache_entity_delete($entity, $type) {
   if (!empty($info['entity cache'])) {
     cache_clear_all($id, 'cache_entity_' . $type);
   }
-  // @todo: remove this after the code was deployed and the table is sure that
-  // exists.
-  if (db_table_exists('entitycache_tokens')) {
-    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
-  }
+  db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
 }
 
 /**
@@ -345,16 +333,12 @@ function entitycache_entity_update($entity, $type) {
   if (!empty($info['entity cache']) && empty($entity->migrate)) {
     cache_clear_all($id, 'cache_entity_' . $type);
   }
-  // @todo: remove this after the code was deployed and the table is sure that
-  // exists.
-  if (db_table_exists('entitycache_tokens')) {
-    // Generate a new token and insert it in the tokens table. Basically, we just
-    // generate a random number.
-    $token = rand(100000, 999999);
-    // We use db_query, it is faster.
-    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
-    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
-  }
+  // Generate a new token and insert it in the tokens table. Basically, we just
+  // generate a random number.
+  $token = rand(100000, 999999);
+  // We use db_query, it is faster.
+  db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+  db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
 }
 
 /**
