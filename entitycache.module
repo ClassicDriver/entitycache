@@ -299,10 +299,12 @@ function entitycache_entity_insert($entity, $type) {
   }
   // Generate a new token and insert it in the tokens table. Basically, we just
   // generate a random number.
+  if ($type == 'node') {
   $token = rand(100000, 999999);
-  // We use db_query, it is faster.
-  db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
-  db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
+    // We use db_query, it is faster.
+    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
+  }
 }
 
 /**
@@ -333,12 +335,14 @@ function entitycache_entity_update($entity, $type) {
   if (!empty($info['entity cache']) && empty($entity->migrate)) {
     cache_clear_all($id, 'cache_entity_' . $type);
   }
-  // Generate a new token and insert it in the tokens table. Basically, we just
-  // generate a random number.
-  $token = rand(100000, 999999);
-  // We use db_query, it is faster.
-  db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
-  db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
+  if ($type == 'node') {
+    // Generate a new token and insert it in the tokens table. Basically, we just
+    // generate a random number.
+    $token = rand(100000, 999999);
+    // We use db_query, it is faster.
+    db_query('DELETE FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type=:entity_type', array(':entity_id' => $id, ':entity_type' => $type));
+    db_query('INSERT INTO {entitycache_tokens} (entity_id, entity_type, token) VALUES (:entity_id, :entity_type, :token)', array(':entity_id' => $id, ':entity_type' => $type, ':token' => $token));
+  }
 }
 
 /**
