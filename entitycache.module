@@ -66,7 +66,7 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       foreach ($ids as $_key => $_value) {
         if (!is_numeric($_value) || !is_string($_value)) {
           ob_start();
-          echo '<pre>'; print_r($ids);
+          echo serialize($ids);
           $output = ob_get_clean();
           watchdog('cache_debug', 'nested array for entity load: ' . $controller->entityType . '; ' . $output, NULL);
         }
