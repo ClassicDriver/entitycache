@@ -66,6 +66,14 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     // value which is not array. This must be cheked, who invokes the method
     // like this.
     $passed_ids = (!empty($ids) && is_array($ids)) ? array_flip($ids) : FALSE;
+    if (!is_array($ids)) {
+      ob_start();
+      echo '<pre>';
+      print_r($ids);
+      var_dump($ids);
+      $output = ob_get_clean();
+      watchdog('cache_debug', 'cache debug for entity type: ' . $controller->entityType . '; ' . $output);
+    }
     // Try to load entities from the static cache, if the entity type supports
     // static caching.
     if ($controller->cache && !$revision_id) {
