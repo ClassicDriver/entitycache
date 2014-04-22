@@ -61,19 +61,6 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     // were passed. The $ids array is reduced as items are loaded from cache,
     // and we need to know if it's empty for this reason to avoid querying the
     // database when all requested entities are loaded from cache.
-
-    if (!empty($ids)) {
-      foreach ($ids as $_key => $_value) {
-        if (!is_numeric($_value) && !is_string($_value)) {
-          $output = serialize($ids);
-          $stack = debug_backtrace();
-          foreach ($stack as $stack_value) {
-            $output .= '; ' . $stack_value['function'];
-          }
-          watchdog('cache_debug', 'nested array for entity load: ' . $controller->entityType . '; ' . $output, NULL);
-        }
-      }
-    }
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
     // Try to load entities from the static cache, if the entity type supports
     // static caching.
