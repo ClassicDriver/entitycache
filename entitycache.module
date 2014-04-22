@@ -63,14 +63,14 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
     // database when all requested entities are loaded from cache.
 
     if (!empty($ids)) {
-      /*foreach ($ids as $_key => $_value) {
-        if (!is_numeric($_value) || !is_string($_value)) {
+      foreach ($ids as $_key => $_value) {
+        if (!is_numeric($_value) && !is_string($_value)) {
           ob_start();
           echo serialize($ids);
           $output = ob_get_clean();
           watchdog('cache_debug', 'nested array for entity load: ' . $controller->entityType . '; ' . $output, NULL);
         }
-      }*/
+      }
     }
     $passed_ids = !empty($ids) ? array_flip($ids) : FALSE;
     // Try to load entities from the static cache, if the entity type supports
