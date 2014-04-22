@@ -151,12 +151,12 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       // A special case for nodes, to make sure we cache a valid entity.
       // See: http://jira.amazeelabs.com/browse/CD-3741
       if ($controller->entityType == 'node') {
-        $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
+        $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $item->nid, ':entity_type' => 'node'))->fetch();
         // If the changed timestamp is different than the one we want to cache,
         // then this means that the item to cache changed in the meantime. So,
         // just do not cache the item right now, it will be cached in a later
         // request.
-        if ($item->entitycache_token != $token->token) {
+        if (!empty($token) && !empty($item->entitycache_token) && $item->entitycache_token != $token->token) {
           continue;
         }
       }
