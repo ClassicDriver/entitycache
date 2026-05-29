@@ -162,6 +162,17 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       // A special case for nodes, to make sure we cache a valid entity.
       // See: http://jira.amazeelabs.com/browse/CD-3741
       if ($controller->entityType == 'node') {
+        // Never cache an unpublished node. Drafts / scheduled / moderated nodes
+        // are viewed rarely and edited often; caching one risks serving a stale
+        // status=0 copy after it is published (CDO-728 — both the article and
+        // the car-listing bugs were exactly this draft->publish transition).
+        // node_access() denies status=0 to the public anyway, so there is
+        // nothing to gain. This closes the publish-staleness class by
+        // construction (no status=0 entry can exist); the token guard below
+        // additionally covers edits to already-published content (1 -> newer 1).
+        if (empty($item->status)) {
+          continue;
+        }
         $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $item->nid, ':entity_type' => 'node'))->fetch();
         // If the changed timestamp is different than the one we want to cache,
         // then this means that the item to cache changed in the meantime. So,
