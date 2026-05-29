@@ -104,6 +104,17 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       $entities += $queried_entities;
     }
 
+    // CDO-728: stamp the version token onto DB-loaded (cache-miss) nodes too,
+    // captured here at load time. Without it these objects carry no
+    // entitycache_token, so entityCacheSet()'s CD-3741 guard short-circuits and
+    // caches them unconditionally — meaning a stale status=0 node loaded just
+    // before a publish gets cached permanently and renders "no longer
+    // available". With the token stamped, entityCacheSet() rejects the write
+    // when the live token has rotated (i.e. the node was published since load).
+    if (!empty($queried_entities) && !$revision_id) {
+      self::entityCacheAttachToken($controller, $queried_entities);
+    }
+
     if (!empty($controller->entityInfo['entity cache'])) {
       // Add entities to the entity cache if we are not loading a revision.
       if (!empty($queried_entities) && !$revision_id) {
@@ -183,14 +194,33 @@ class EntityCacheControllerHelper extends DrupalDefaultEntityController {
       $function = $module . '_entitycache_' . $controller->entityType . '_load';
       $function($entities);
     }
-    // Load also the token.
-    // For the moment, for performance reasons, use only for nodes.
-    if ($controller->entityType == 'node') {
-      foreach ($entities as $key => $entity) {
-        $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
-        if (!empty($token)) {
-          $entities[$key]->entitycache_token = $token->token;
-        }
+    // Stamp the version token on cache-hit loads. See entityCacheAttachToken().
+    self::entityCacheAttachToken($controller, $entities);
+  }
+
+  /**
+   * Stamp the entity-cache version token onto node objects, captured at the
+   * moment they are loaded. entityCacheSet() compares this token against the
+   * live value in {entitycache_tokens}; if they differ at cache-write time, the
+   * node was published/changed between load and write, so the (now stale) copy
+   * is skipped. Must run for BOTH cache-hit (entityCacheAttachLoad) and DB
+   * cache-miss (entityCacheLoad) loads — see CDO-728: DB-loaded nodes carried
+   * no token, so a stale status=0 copy loaded just before a publish was cached
+   * permanently and the node rendered as "no longer available".
+   *
+   * For the moment, for performance reasons, used only for nodes.
+   */
+  public static function entityCacheAttachToken($controller, $entities) {
+    if ($controller->entityType != 'node') {
+      return;
+    }
+    foreach ($entities as $key => $entity) {
+      if (empty($entity->nid)) {
+        continue;
+      }
+      $token = db_query('SELECT token FROM {entitycache_tokens} WHERE entity_id=:entity_id AND entity_type = :entity_type', array(':entity_id' => $entity->nid, ':entity_type' => 'node'))->fetch();
+      if (!empty($token)) {
+        $entities[$key]->entitycache_token = $token->token;
       }
     }
   }
